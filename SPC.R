@@ -1,3 +1,9 @@
+library(DBI)
+library(ggplot2)
+library(dplyr)
+library(tibble)
+library(lubridate)
+
 SPC <- function(ndays = 7){
 
   #convert number of days into a start time (number of days before now)
@@ -38,7 +44,7 @@ SPC <- function(ndays = 7){
   #Join the tables into one
   THENE <- inner_join(SMPL,RSLT,"SMPL_NAME")
   
-  #Perform the query using dplyr (just FY21 for testing):
+  #Perform the query using dplyr:
   qry <- THENE %>% 
     filter(SMPL_DT >= st1 & 
            EQ_NAME == "AUTOGRADER") %>% 
