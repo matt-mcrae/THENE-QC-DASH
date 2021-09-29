@@ -20,8 +20,7 @@ SPECS.QRY <- inner_join(LIMS.SPECS,LIMS.DETAIL,"PRDCT_SPC_NAME") %>%
                            "LDJ225", "LDJ226", "LDN248", "WNC199", "WRM124", 
                            "XDS34", "XJF143", "XLC177", "XLF197") &
            PRPRTY_NAME %in% c("ASH", "DENS_COLUMN", "GOOD CUTS",
-                              "CUT_GRAN", "GOTTFERT SWELL R", 
-                              "DAVENPORT SWELL R")) %>% 
+                              "CUT_GRAN", "GOTTFERT SWELL R")) %>% 
   collect()
 
 #use the min of min as QA and the max of min as QC, etc
@@ -32,11 +31,11 @@ SPECS.QRY <- inner_join(LIMS.SPECS,LIMS.DETAIL,"PRDCT_SPC_NAME") %>%
 #These can be contained in a vector length 4: [USL, UCL, LCL, LSL]
 
 #Each grade has 5 properties of interest:
-SPECS.PROP <- list("Ash" = vector(mode = "double", length = 4), 
-  "Density" = vector(mode = "double", length = 4), 
-  "Good Granules" = vector(mode = "double", length = 4), 
-  "Granules per Gram" = vector(mode = "double", length = 4), 
-  "Swell Ratio" = vector(mode = "double", length = 4))
+SPECS.PROP <- list("ASH" = vector(mode = "double", length = 4), 
+  "DENS_COLUMN" = vector(mode = "double", length = 4), 
+  "GOOD CUTS" = vector(mode = "double", length = 4), 
+  "CUT_GRAN" = vector(mode = "double", length = 4), 
+  "GOTTFERT SWELL R" = vector(mode = "double", length = 4))
 
 #There are 19 grades of interest
 SPECS <- vector(mode = "list", length = 19)
@@ -51,11 +50,39 @@ for (i in 1:19){SPECS[[i]] <- SPECS.PROP}
 #So a list of 19 grades... each element has a list of properties and each
 #property has a vector of length 4 with the actual values from LIMS
 
-names(SPECS[1]) #grade name
-names(SPECS[[1]][1]) #Property Name
-SPECS[[1]][[1]][1] #USL value
-
 #Do a nested for loop - for GRADE, then for PROPERTY
 for (j in 1:19){
-  SPECS[[j]]
+  suppressWarnings(
+  for (k in 1:5){
+    
+    #USL
+    SPECS[[j]][[k]][1] <- max(as.double(SPECS.QRY$MAX_VALUE[
+      SPECS.QRY$PRDCT_NAME == names(SPECS[j]) & 
+        SPECS.QRY$PRPRTY_NAME == names(SPECS[[j]][k])]), na.rm = T)
+    
+    if (is.infinite(SPECS[[j]][[k]][1])) {SPECS[[j]][[k]][1] <- NA}
+    
+    #UCL
+    SPECS[[j]][[k]][2] <- min(as.double(SPECS.QRY$MAX_VALUE[
+      SPECS.QRY$PRDCT_NAME == names(SPECS[j]) & 
+        SPECS.QRY$PRPRTY_NAME == names(SPECS[[j]][k])]), na.rm = T)
+    
+    if (is.infinite(SPECS[[j]][[k]][2])) {SPECS[[j]][[k]][2] <- NA}
+    
+    #LCL
+    SPECS[[j]][[k]][3] <- max(as.double(SPECS.QRY$MIN_VALUE[
+      SPECS.QRY$PRDCT_NAME == names(SPECS[j]) & 
+        SPECS.QRY$PRPRTY_NAME == names(SPECS[[j]][k])]), na.rm = T)
+    
+    if (is.infinite(SPECS[[j]][[k]][3])) {SPECS[[j]][[k]][3] <- NA}
+    
+    #LSL
+    SPECS[[j]][[k]][4] <- min(as.double(SPECS.QRY$MIN_VALUE[
+      SPECS.QRY$PRDCT_NAME == names(SPECS[j]) & 
+        SPECS.QRY$PRPRTY_NAME == names(SPECS[[j]][k])]), na.rm = T)
+    
+    if (is.infinite(SPECS[[j]][[k]][4])) {SPECS[[j]][[k]][4] <- NA}
+    
+  })
 }
+
