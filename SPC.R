@@ -1,11 +1,7 @@
-library(DBI)
-library(ggplot2)
-library(dplyr)
-library(tibble)
-library(lubridate)
-
 SPC <- function(ndays = 7){
 
+# VARIABLE DATE RANGE ----
+  
   #convert number of days into a start time (number of days before now)
   st <- today() - ndays
   
@@ -17,35 +13,31 @@ SPC <- function(ndays = 7){
     dateb <- seq.POSIXt(as.POSIXct(st)+5*60*60,as.POSIXct(force_tz(today(),tzone="UTC"))+17*60*60, 12*60*60)
     datea <- 45
     datel <- "%a %R"
-    datev <- 1}
-  else if(ndays<=14){
+    datev <- 1} else if(ndays<=14){
     dateb <- seq.POSIXt(as.POSIXct(st)+5*60*60,as.POSIXct(force_tz(today(),tzone="UTC"))+17*60*60, 12*60*60)
     datea <- 90
     datel <- "%d/%m %R"
-    datev <- 0.5}
-  else if(ndays<=21){
+    datev <- 0.5} else if(ndays<=21){
     dateb <- seq.POSIXt(as.POSIXct(st)+5*60*60,as.POSIXct(force_tz(today(),tzone="UTC"))+17*60*60, 24*60*60)
     datea <- 45
     datel <- "%d/%m %R"
-    datev <- 1}
-  else{
+    datev <- 1} else{
     dateb <- seq.POSIXt(as.POSIXct(st)+5*60*60,as.POSIXct(force_tz(today(),tzone="UTC"))+17*60*60, 24*60*60)
     datea <- 90
     datel <- "%d/%m %R"
     datev <- 0.5}
   
-  #Open DB connection object: ----
+# LIMS DATABASE QUERIES ----
   con <- dbConnect(odbc::odbc(), "Alkathene")
   
   #Extract the two tables with the LIMS data of interest
   SMPL <- tbl(con, "IP_SMPL")
   RSLT <- tbl(con, "IP_TST_RSLT")
+  LIMS.SPECS <- tbl(con, "IP_PRDCT_SPC")
+  LIMS.DETAIL <- tbl(con, "IP_PRDCT_SPC_DETAIL")
   
-  #Join the tables into one
-  THENE <- inner_join(SMPL,RSLT,"SMPL_NAME")
-  
-  #Perform the query using dplyr:
-  qry <- THENE %>% 
+  #Perform the test data query using dplyr:
+  qry <- inner_join(SMPL,RSLT,"SMPL_NAME") %>% 
     filter(SMPL_DT >= st1 & 
            EQ_NAME == "AUTOGRADER") %>% 
     select(SMPL_DT_TM,
@@ -60,10 +52,38 @@ SPC <- function(ndays = 7){
     arrange(SMPL_DT_TM) %>% 
     collect()
   
+  #Perform the specification data query using dplyr:
+  SPECS.QRY <- inner_join(LIMS.SPECS,LIMS.DETAIL,"PRDCT_SPC_NAME") %>%
+    select(PRDCT_SPC_NAME, 
+           PRDCT_NAME,
+           PRPRTY_NAME,
+           MIN_VALUE,
+           AIM_VALUE,
+           MAX_VALUE) %>%
+    filter(PRDCT_NAME %in% c("LD0220MS", "LD1217", "LD6622", "LDD201", "LDD203",
+                             "LDD204", "LDD205", "LDF433", "LDH210", "LDH215", 
+                             "LDJ225", "LDJ226", "LDN248", "WNC199", "WRM124", 
+                             "XDS34", "XJF143", "XLC177", "XLF197") &
+             PRPRTY_NAME %in% c("ASH", "DENS_COLUMN", "GOOD CUTS",
+                                "CUT_GRAN", "GOTTFERT SWELL R")) %>% 
+    collect()
+  
   #Close the database connection:
   dbDisconnect(con)
 
-  #Manipulate the data into more human-friendly names: ----
+# BUILD SPECIFICATION TABLES ----
+  
+  options(dplyr.summarise.inform = F)
+  
+  SPECS <- SPECS.QRY %>% group_by(PRDCT_NAME, PRPRTY_NAME) %>% summarise(
+    "USL" = as.double(max(MAX_VALUE)),
+    "UCL" = as.double(min(MAX_VALUE)),
+    "LCL" = as.double(max(MIN_VALUE)),
+    "LSL" = as.double(min(MIN_VALUE)))
+  
+  options(dplyr.summarise.inform = T)
+  
+# RENAME TEST DATA FOR NICER PRINTING TO CHARTS ----
   #Property names
   LIMS_prop <- c("ASH"="Ash", 
                  "DENS_COLUMN"="Density", 
@@ -74,11 +94,24 @@ SPC <- function(ndays = 7){
                  "DAVENPORT SWELL R"="Swell Ratio")
   
   qry$PRPRTY_NAME <- unname(LIMS_prop[qry$PRPRTY_NAME])
+  SPECS$PRPRTY_NAME <- unname(LIMS_prop[SPECS$PRPRTY_NAME])
   
   #Reactor Vessel Names
   qry$TMPLT_NAME <- paste0("RV",substr(qry$TMPLT_NAME,11,11))
   
-  # Create subsets of the data ----
+  #Issues with single-sided spec. limits, manually override:
+  SPECS$UCL[SPECS$PRPRTY_NAME == "Good Granules"] <- 100
+  SPECS$USL[SPECS$PRPRTY_NAME == "Good Granules"] <- SPECS$LCL[SPECS$PRPRTY_NAME == "Good Granules"]
+  
+  SPECS$USL[SPECS$PRPRTY_NAME == "Granules per Gram"] <- NA
+  SPECS$LSL[SPECS$PRPRTY_NAME == "Granules per Gram"] <- NA
+  
+  SPECS$USL[SPECS$PRPRTY_NAME == "Swell Ratio" &
+              SPECS$PRDCT_NAME %in% c("LD1217", "LDN248", "WNC199", "XLC177")] <- 
+    SPECS$LCL[SPECS$PRPRTY_NAME == "Swell Ratio" &
+                SPECS$PRDCT_NAME %in% c("LD1217", "LDN248", "WNC199", "XLC177")]
+  
+# BREAK THE TEST DATA DOWN INTO SUBSETS ----
   #names for each subset (RV# and property combo) into an empty list
   subqry <- rep(list(vector(mode = "list", length = 3)),15)
   names(subqry) <-  c("RV2A","RV2C","RV2D","RV2G","RV2S",
@@ -89,7 +122,7 @@ SPC <- function(ndays = 7){
   rv <- c(rep("RV2",5), rep("RV3",5), rep("RV4",5))
   prp <- rep(c("Ash","Good Granules","Density","Granules per Gram","Swell Ratio"),3)
 
-  #'Group' the data based on grade changes ----
+# ASSIGN GROUPS BASED ON WHEN THE GRADE CHANGES ----
   for(i in 1:15){
   
   #Name the sub-lists appropriately
@@ -102,8 +135,7 @@ SPC <- function(ndays = 7){
   subqry[[i]][[1]]$GROUP <- 0
   subqry[[i]][[1]]$RULE <- 0
   
-  #Check that there are any rows of data and skip if blank (assign placeholder ggplot object too)
-  if(nrow(subqry[[i]][[1]]) == 0){subqry[[i]][[3]] <- ggplot()}
+  #Check that there are any rows of data and skip if blank
   if(nrow(subqry[[i]][[1]]) == 0){next}
   
   #Apply group numbers for each DATA element in the list
@@ -120,10 +152,11 @@ SPC <- function(ndays = 7){
       else subqry[[i]][[1]]$GROUP[j] <- subqry[[i]][[1]]$GROUP[j-1] + 1 
     }
   
-  #Create summary statistics for each group (for each list element) ----
+# CREATE SUMMARY STATISTICS FOR THE TEST DATA BY REACTOR, PROPERTY AND GROUP ----
   subqry[[i]][[2]] <- subqry[[i]][[1]] %>% 
     group_by(GROUP) %>% 
     summarise("GRADE" = first(PRDCT_NAME),
+              "PROP" = first(PRPRTY_NAME),
               "DATE" = first(SMPL_DT_TM),
               "MU" = mean(RSLT_NUMERIC_VALUE, na.rm=T),
               "SD" = sd(RSLT_NUMERIC_VALUE, na.rm=T)) %>% 
@@ -134,13 +167,14 @@ SPC <- function(ndays = 7){
            "p3s"= MU + 3*SD,
            "m1s"= MU - SD,
            "m2s"= MU - 2*SD,
-           "m3s"= MU - 3*SD)
+           "m3s"= MU - 3*SD) %>% 
+    inner_join(SPECS, by = c("GRADE"="PRDCT_NAME", "PROP"="PRPRTY_NAME"))
   
   #Replace NA values in 'tf' column with the last timestamp in the Data
   subqry[[i]][[2]]$tf[length(subqry[[i]][[2]]$tf)] <- last(subqry[[i]][[1]]$SMPL_DT_TM)
   
-  #Check for special cause variation (from Western ELectric Rules) ----
-  # and update RULE with result. Negative values indicate violation below the mean
+# CHECK FOR SPECIAL CAUSE VARIATION (FROM WESTERN ELECTRIC RULES) ----
+  #Negative values indicate violation below the mean
   for (k in 1:last(subqry[[i]]$DATA$GROUP)) {
     rules <- 
       tibble("tst1a" = subqry[[i]]$DATA$RSLT_NUMERIC_VALUE[subqry[[i]]$DATA$GROUP==k] > subqry[[i]]$SUMMARY$p3s[subqry[[i]]$SUMMARY$GROUP==k], 
@@ -197,18 +231,20 @@ SPC <- function(ndays = 7){
     
     }
   
-  #Create a ggplot2 object with the data (but do not plot) ----
+# ASSIGN GGPLOT2 OBJECTS (FOR PLOTTING LATER) ----
   subqry[[i]][[3]] <-   
     ggplot(data = subqry[[i]][[2]]) + theme_bw() +
-    #draw a semitransparent rectangle as a background for each group
-    geom_rect(aes(xmin=ts, xmax=tf, ymin=m3s, ymax=p3s), fill="wheat",alpha=0.25) +
+    #draw an amber rectangle to indicate the zone outside of QC but within QA
+    geom_rect(aes(xmin=ts, xmax=tf, ymin=LSL, ymax=USL), fill="lightgoldenrod", alpha = 0.75) +
+    #draw a green rectangle to indicate the zone within QC
+    geom_rect(aes(xmin=ts, xmax=tf, ymin=LCL, ymax=UCL), fill="lightgreen", alpha = 0.75) +
     #draw lines for the mean and 1,2,3 sigma limits
     geom_segment(aes(x=ts,y=p3s,xend=tf,yend=p3s), colour = 'red') +
-    geom_segment(aes(x=ts,y=p2s,xend=tf,yend=p2s), colour = 'red', alpha = 0.5) +
-    geom_segment(aes(x=ts,y=p1s,xend=tf,yend=p1s), colour = 'red', alpha = 0.25) +
+    geom_segment(aes(x=ts,y=p2s,xend=tf,yend=p2s), colour = 'red', alpha = 0.75) +
+    geom_segment(aes(x=ts,y=p1s,xend=tf,yend=p1s), colour = 'red', alpha = 0.55) +
     geom_segment(aes(x=ts,y=MU,xend=tf,yend=MU), colour = 'green') +
-    geom_segment(aes(x=ts,y=m1s,xend=tf,yend=m1s), colour = 'red', alpha = 0.25) +
-    geom_segment(aes(x=ts,y=m2s,xend=tf,yend=m2s), colour = 'red', alpha = 0.5) +
+    geom_segment(aes(x=ts,y=m1s,xend=tf,yend=m1s), colour = 'red', alpha = 0.5) +
+    geom_segment(aes(x=ts,y=m2s,xend=tf,yend=m2s), colour = 'red', alpha = 0.75) +
     geom_segment(aes(x=ts,y=m3s,xend=tf,yend=m3s), colour = 'red') +
     #Plot the actual data points as a line chart (by group)
     geom_line(data=subqry[[i]][[1]], 
@@ -236,10 +272,12 @@ SPC <- function(ndays = 7){
     #Remove the x-axis label and show the property and units on the y-axis
     labs(x=NULL, y=paste0(subqry[[i]][[1]]$PRPRTY_NAME[1]," (",subqry[[i]][[1]]$UNITS[1],")")) +
     #Make the typeface of the y-axis bold and larger than default
-    theme(axis.title.y = element_text(face = "bold", size = 14))
-    
+    theme(axis.title.y = element_text(face = "bold", size = 14)) +
+    #Make the background colour red
+    theme(panel.background = element_rect(fill = "lightcoral"))
+
   }
 
   return(subqry)
-  
+
 }
