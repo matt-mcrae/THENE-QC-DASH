@@ -32,7 +32,7 @@ ui <-
           "The Control Charts below are used to detect variations in the 
           Alkathene process. For each grade, the process mean (average) is 
           indicated by a green line, with red lines placed at ± 1, 2 and 3 
-          standard deviations (??) from the process mean. The position of data 
+          standard deviations (σ) from the process mean. The position of data 
           points within these regions can be used to predict potentially out of 
           control processes based on a set of four rules:",
           style = "font-size:12px"
@@ -47,19 +47,19 @@ ui <-
         4,
         p(
           span(strong("RULE 1:", style = "color:red")),
-          "Any single data point falls outside the 3??-limit from the process 
+          "Any single data point falls outside the 3σ-limit from the process 
           mean",
           style = "font-size:12px"
         ),
         p(
           span(strong("RULE 2:", style = "color:red")),
-          "Two out of three consecutive points fall beyond the 2??-limit (on the 
+          "Two out of three consecutive points fall beyond the 2σ-limit (on the 
           same side of the process mean)",
           style = "font-size:12px"
         ),
         p(
           span(strong("RULE 3:", style = "color:red")),
-          "Four out of five consecutive points fall beyond the 1??-limit (on the 
+          "Four out of five consecutive points fall beyond the 1σ-limit (on the 
           same side of the process mean)",
           style = "font-size:12px"
         ),
