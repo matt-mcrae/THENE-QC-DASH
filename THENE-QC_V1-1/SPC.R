@@ -111,6 +111,9 @@ SPC <- function(ndays = 7){
     SPECS$LCL[SPECS$PRPRTY_NAME == "Swell Ratio" &
                 SPECS$PRDCT_NAME %in% c("LD1217", "LDN248", "WNC199", "XLC177")]
   
+  SPECS$UCL[SPECS$PRPRTY_NAME == "Swell Ratio" &
+              SPECS$PRDCT_NAME %in% c("LD1217", "LDN248", "WNC199", "XLC177")] <- 2
+  
 # BREAK THE TEST DATA DOWN INTO SUBSETS ----
   #names for each subset (RV# and property combo) into an empty list
   subqry <- rep(list(vector(mode = "list", length = 3)),15)
@@ -234,45 +237,49 @@ SPC <- function(ndays = 7){
 # ASSIGN GGPLOT2 OBJECTS (FOR PLOTTING LATER) ----
   subqry[[i]][[3]] <-   
     ggplot(data = subqry[[i]][[2]]) + theme_bw() +
+    #Remove the gridlines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
     #draw an amber rectangle to indicate the zone outside of QC but within QA
-    geom_rect(aes(xmin=ts, xmax=tf, ymin=LSL, ymax=USL), fill="lightgoldenrod", alpha = 0.75) +
+    geom_rect(aes(xmin=ts, xmax=tf, ymin=LSL, ymax=USL), fill="lightgoldenrod", alpha = 1) +
     #draw a green rectangle to indicate the zone within QC
-    geom_rect(aes(xmin=ts, xmax=tf, ymin=LCL, ymax=UCL), fill="lightgreen", alpha = 0.75) +
+    geom_rect(aes(xmin=ts, xmax=tf, ymin=LCL, ymax=UCL), fill="lightgreen", alpha = 1) +
     #draw lines for the mean and 1,2,3 sigma limits
-    geom_segment(aes(x=ts,y=p3s,xend=tf,yend=p3s), colour = 'red') +
-    geom_segment(aes(x=ts,y=p2s,xend=tf,yend=p2s), colour = 'red', alpha = 0.75) +
-    geom_segment(aes(x=ts,y=p1s,xend=tf,yend=p1s), colour = 'red', alpha = 0.55) +
-    geom_segment(aes(x=ts,y=MU,xend=tf,yend=MU), colour = 'green') +
-    geom_segment(aes(x=ts,y=m1s,xend=tf,yend=m1s), colour = 'red', alpha = 0.5) +
-    geom_segment(aes(x=ts,y=m2s,xend=tf,yend=m2s), colour = 'red', alpha = 0.75) +
-    geom_segment(aes(x=ts,y=m3s,xend=tf,yend=m3s), colour = 'red') +
+    geom_segment(aes(x=ts,y=p3s,xend=tf,yend=p3s), colour = 'red', linetype = 5, size = 0.75) +
+    geom_segment(aes(x=ts,y=p2s,xend=tf,yend=p2s), colour = 'red', alpha = 0.75, linetype = 2) +
+    geom_segment(aes(x=ts,y=p1s,xend=tf,yend=p1s), colour = 'red', alpha = 0.55, linetype = 2) +
+    geom_segment(aes(x=ts,y=MU,xend=tf,yend=MU), colour = 'blue', size = 0.75) +
+    geom_segment(aes(x=ts,y=m1s,xend=tf,yend=m1s), colour = 'red', alpha = 0.5, linetype = 2) +
+    geom_segment(aes(x=ts,y=m2s,xend=tf,yend=m2s), colour = 'red', alpha = 0.75, linetype = 2) +
+    geom_segment(aes(x=ts,y=m3s,xend=tf,yend=m3s), colour = 'red', linetype = 5, size = 0.75) +
     #Plot the actual data points as a line chart (by group)
     geom_line(data=subqry[[i]][[1]], 
-              mapping=aes(SMPL_DT_TM, RSLT_NUMERIC_VALUE, group = GROUP), na.rm=T) +
+              mapping=aes(SMPL_DT_TM, RSLT_NUMERIC_VALUE, group = GROUP), na.rm=T, size = 0.75) +
     #Plot data that are in control as black points
     geom_point(data=subqry[[i]][[1]][subqry[[i]][[1]]$RULE==0,], 
-               mapping=aes(SMPL_DT_TM, RSLT_NUMERIC_VALUE), na.rm=T) +
+               mapping=aes(SMPL_DT_TM, RSLT_NUMERIC_VALUE), na.rm=T, size = 3) +
     #Plot 'out of control' data as red points...
     geom_point(data=subqry[[i]][[1]][subqry[[i]][[1]]$RULE!=0,],
-               mapping=aes(SMPL_DT_TM, RSLT_NUMERIC_VALUE), colour='red', na.rm=T) +
+               mapping=aes(SMPL_DT_TM, RSLT_NUMERIC_VALUE), colour='red', na.rm=T, size = 3) +
     #...with red text labels showing rule no. that was violated
     geom_text(data=subqry[[i]][[1]][subqry[[i]][[1]]$RULE!=0,], 
               mapping=aes(SMPL_DT_TM, RSLT_NUMERIC_VALUE),
               label = subqry[[i]][[1]]$RULE[subqry[[i]][[1]]$RULE!=0],
               nudge_y=sign(subqry[[i]][[1]]$RULE[subqry[[i]][[1]]$RULE!=0])*
-                mean(subqry[[i]][[2]]$SD, na.rm=T)*0.25, 
-              colour = 'red') +
+                mean(subqry[[i]][[2]]$SD, na.rm=T)*0.5, 
+              colour = 'red3', fontface = "bold") +
     #Add labels above each group area
     geom_label(aes(x=ts+0.5*(tf-ts), y=p3s, label=GRADE), 
                nudge_y=mean(subqry[[i]][[2]]$SD, na.rm=T)) +
     #Adjust the x-axis to have breaks at 5AM/PM intervals over one week
-    scale_x_datetime(breaks = dateb, date_labels = datel) +
+    scale_x_datetime(breaks = dateb, date_labels = datel, expand=c(0,0)) +
     #Rotate the x-axis labels by 45 degrees
     theme(axis.text.x = element_text(angle = datea, hjust=1, vjust = datev, face = "bold", size = 11)) +
     #Remove the x-axis label and show the property and units on the y-axis
     labs(x=NULL, y=paste0(subqry[[i]][[1]]$PRPRTY_NAME[1]," (",subqry[[i]][[1]]$UNITS[1],")")) +
     #Make the typeface of the y-axis bold and larger than default
-    theme(axis.title.y = element_text(face = "bold", size = 14)) +
+    theme(axis.title.y = element_text(face = "bold", size = 20)) +
+    #Make the y-axis text more readable:
+    theme(axis.text.y = element_text(face = "bold", size = 11)) +
     #Make the background colour red
     theme(panel.background = element_rect(fill = "lightcoral"))
 
