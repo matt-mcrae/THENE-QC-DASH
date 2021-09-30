@@ -1,5 +1,6 @@
 # Updated punchlist after kickoff meeting 28/09/21 ----
 #    [y] Indicate CL and SL lines on all charts (pull specs from LIMS)
+#    [] Finalise visual style of charts (colours, line weights, etc)
 #    [] Suitability of all 4 rules (e.g. rule 4 on gran/gram)
 #    [] Data on amount of floss in containers loaded out
 #    [] Create a summary/home page with 'traffic lights'
