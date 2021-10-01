@@ -223,10 +223,15 @@ SPC <- function(ndays = 7){
              "c9b" = lag(subqry[[i]]$DATA$RSLT_NUMERIC_VALUE[subqry[[i]]$DATA$GROUP==k],8) < subqry[[i]]$SUMMARY$MU[subqry[[i]]$SUMMARY$GROUP==k],
              "tst4b" = c1b+c2b+c3b+c4b+c5b+c6b+c7b+c8b+c9b == 9)
     
+    
+    #Don't want rules 3 and 4 applied to granules per gram
+    if (i %in% c(1:3, 5:8, 10:13, 15)){
     subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k] <- replace(subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k], rules$tst4a, 4)
     subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k] <- replace(subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k], rules$tst4b, -4)
     subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k] <- replace(subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k], rules$tst3a, 3)
     subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k] <- replace(subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k], rules$tst3b, -3)
+    }
+    
     subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k] <- replace(subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k], rules$tst2a, 2)
     subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k] <- replace(subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k], rules$tst2b, -2)
     subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k] <- replace(subqry[[i]]$DATA$RULE[subqry[[i]]$DATA$GROUP==k], rules$tst1a, 1)
