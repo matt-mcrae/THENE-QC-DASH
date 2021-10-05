@@ -7,14 +7,18 @@ library(lubridate)
 
 source('SPC.R')
 
+R <- '<img src="R.png" height="60" width="60"></img>'
+Y <- '<img src="Y.png" height="60" width="60"></img>'
+G <- '<img src="G.png" height="60" width="60"></img>'
+
 # Define UI ----
 ui <-
   navbarPage(
     title = div(strong("Alkathene Quality Dashboard"), 
-                style = "color:black; font-size:32px"),
+                style = "color:#0099FF; font-size:32px"),
     windowTitle = "Alkathene QC Dashboard",
     collapsible = T,
-    header = fluidRow(
+    header = wellPanel(fluidRow(
       column(
         3,
         sliderInput(
@@ -68,12 +72,24 @@ ui <-
           "Nine consecutive points fall on the same side of the process mean",
           style = "font-size:12px"
         )
-      )
-    ),
+        )
+      ), tags$style(type = "text/css", ".navbar {margin-bottom: 0px;}") #remove whitespace
+      ),
     tabPanel(
       title = strong("Overview", style = "font-size:24px"),
-      fluidRow(),
-      fluidRow()
+      fluidRow(column(3, fluidRow(div("Product Quality - Past 24hrs",
+                                     style = "color:#0099FF; font-size:30px", 
+                                     align = "center")),
+                      fluidRow(div(strong(tableOutput('ttest'),
+                                 style = "font-size:20px")))
+                      ),
+               column(8, fluidRow(div("Floss in Bulk Containers",
+                                     style = "color:#0099FF; font-size:30px", 
+                                     align = "center")),
+                      fluidRow(),
+                      offset = 1
+                      )
+               )
     ),
     tabPanel(
       title = strong("RV2", style = "color:green; font-size:24px"),
@@ -97,11 +113,7 @@ ui <-
         column(4, plotOutput('RV4C')),
         column(4, plotOutput('RV4G'))
       )
-    ),
-    tabPanel("Specifications",
-             fluidRow(column(
-               12, img(src = "specs.png")
-             )))
+    )
   )
 
 # Define server logic ----
@@ -154,6 +166,17 @@ server <- function(input, output) {
   output$RV4G <- renderPlot({
     spc()$RV4G$PLOT
   })
+  
+  output$ttest <- renderTable({
+    sumtab <- tibble(
+      "Property" = c("Density", "Swell Ratio", "Ash", "Cut", "Granules/g"),
+      "RV2" = c(G, G, NA, Y, G),
+      "RV3" = c(G, Y, R, R, Y),
+      "RV4" = c(R, G, G, Y, G)
+    )
+    sumtab
+  }, na = "", align = "lccc", spacing = "m", width = "100%",
+  sanitize.text.function = function(x) x)
   
 }
 

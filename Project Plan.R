@@ -3,10 +3,11 @@
 #    [y] Finalise visual style of charts (colours, line weights, etc)
 #    [y] Suitability of all 4 rules (e.g. remove rules 3 & 4 on gran/gram)
 #    [y] Data on amount of floss in containers loaded out
-#    [] Create a summary/home page with 'traffic lights'
-#    [] Update 'floss' code to use bulk silos instead of BLPs
+#    [y] Create a summary/home page with 'traffic lights'
+#    [y] Update 'floss' code to use bulk silos instead of BLPs
 #    [] Optimise performance (Seperate out DB queries and just do filters reactively)
-#    [] Finalise the header text
+#    [] Add 'conditions' for dynamically updating traffic lights
+#    [] Finalise the header texts
 
 # Updated punchlist 24/09/21 ----
 
