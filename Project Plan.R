@@ -4,7 +4,9 @@
 #    [y] Suitability of all 4 rules (e.g. remove rules 3 & 4 on gran/gram)
 #    [y] Data on amount of floss in containers loaded out
 #    [] Create a summary/home page with 'traffic lights'
-#    [] Optimise performance (DB queries and reactive() statements)
+#    [] Update 'floss' code to use bulk silos instead of BLPs
+#    [] Optimise performance (Seperate out DB queries and just do filters reactively)
+#    [] Finalise the header text
 
 # Updated punchlist 24/09/21 ----
 
