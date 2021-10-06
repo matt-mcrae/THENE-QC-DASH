@@ -1,0 +1,187 @@
+library(shiny)
+library(DBI)
+library(ggplot2)
+library(dplyr)
+library(tibble)
+library(lubridate)
+library(tidyr)
+
+source("LIMS.R")
+source("SPC.R")
+
+R <- '<img src="R.png" height="60" width="60"></img>'
+Y <- '<img src="Y.png" height="60" width="60"></img>'
+G <- '<img src="G.png" height="60" width="60"></img>'
+
+# Define UI ----
+ui <-
+  navbarPage(
+    title = div(strong("Alkathene Quality Dashboard"), 
+                style = "color:#0099FF; font-size:32px"),
+    windowTitle = "Alkathene QC Dashboard",
+    collapsible = T,
+    header = wellPanel(fluidRow(
+      column(
+        3,
+        sliderInput(
+          "days",
+          label = "Number of Days to View:",
+          min = 7,
+          max = 28,
+          value = 7
+        ),
+        offset = 1
+      ),
+      column(
+        4,
+        p(
+          "The Control Charts below are used to detect variations in the 
+          Alkathene process. For each grade, the process mean (average) is 
+          indicated by a green line, with red lines placed at ± 1, 2 and 3 
+          standard deviations (σ) from the process mean. The position of data 
+          points within these regions can be used to predict potentially out of 
+          control processes based on a set of four rules:",
+          style = "font-size:12px"
+        ),
+        em(
+          "NOTE: negative values indicate a rule violation has occured below 
+          the process mean.",
+          style = "font-size:12px"
+        )
+      ),
+      column(
+        4,
+        p(
+          span(strong("RULE 1:", style = "color:red")),
+          "Any single data point falls outside the 3σ-limit from the process 
+          mean",
+          style = "font-size:12px"
+        ),
+        p(
+          span(strong("RULE 2:", style = "color:red")),
+          "Two out of three consecutive points fall beyond the 2σ-limit (on the 
+          same side of the process mean)",
+          style = "font-size:12px"
+        ),
+        p(
+          span(strong("RULE 3:", style = "color:red")),
+          "Four out of five consecutive points fall beyond the 1σ-limit (on the 
+          same side of the process mean)",
+          style = "font-size:12px"
+        ),
+        p(
+          span(strong("RULE 4:", style = "color:red")),
+          "Nine consecutive points fall on the same side of the process mean",
+          style = "font-size:12px"
+        )
+        )
+      ), tags$style(type = "text/css", ".navbar {margin-bottom: 0px;}") #remove whitespace
+      ),
+    tabPanel(
+      title = strong("Overview", style = "font-size:24px"),
+      fluidRow(column(3, fluidRow(div("Product Quality - Past 24hrs",
+                                     style = "color:#0099FF; font-size:30px", 
+                                     align = "center")),
+                      fluidRow(div(strong(tableOutput("traffic"),
+                                 style = "font-size:20px")))
+                      ),
+               column(8, fluidRow(div("Floss in Bulk Containers",
+                                     style = "color:#0099FF; font-size:30px", 
+                                     align = "center")),
+                      fluidRow(plotOutput('floss')),
+                      offset = 1
+                      )
+               )
+    ),
+    tabPanel(
+      title = strong("RV2", style = "color:green; font-size:24px"),
+      fluidRow(column(6, plotOutput('RV2D')), column(6, plotOutput('RV2S'))),
+      fluidRow(column(6, plotOutput('RV2C')), column(6, plotOutput('RV2G')))
+    ),
+    tabPanel(
+      title = strong("RV3", style = "color:blue; font-size:24px"),
+      fluidRow(column(6, plotOutput('RV3D')), column(6, plotOutput('RV3S'))),
+      fluidRow(
+        column(4, plotOutput('RV3A')),
+        column(4, plotOutput('RV3C')),
+        column(4, plotOutput('RV3G'))
+      )
+    ),
+    tabPanel(
+      title = strong("RV4", style = "color:hotpink; font-size:24px"),
+      fluidRow(column(6, plotOutput('RV4D')), column(6, plotOutput('RV4S'))),
+      fluidRow(
+        column(4, plotOutput('RV4A')),
+        column(4, plotOutput('RV4C')),
+        column(4, plotOutput('RV4G'))
+      )
+    )
+  )
+
+# Define server logic ----
+server <- function(input, output) {
+  
+  LIMS()
+  
+  spc <- reactive({SPC(input$days)})
+  
+  output$RV2D <- renderPlot({spc()$RV2D$PLOT})
+  output$RV2S <- renderPlot({spc()$RV2S$PLOT})
+  output$RV2C <- renderPlot({spc()$RV2C$PLOT})
+  output$RV2G <- renderPlot({spc()$RV2G$PLOT})
+  
+  output$RV3D <- renderPlot({spc()$RV3D$PLOT})
+  output$RV3S <- renderPlot({spc()$RV3S$PLOT})
+  output$RV3A <- renderPlot({spc()$RV3A$PLOT})
+  output$RV3C <- renderPlot({spc()$RV3C$PLOT})
+  output$RV3G <- renderPlot({spc()$RV3G$PLOT})
+  
+  output$RV4D <- renderPlot({spc()$RV4D$PLOT})
+  output$RV4S <- renderPlot({spc()$RV4S$PLOT})
+  output$RV4A <- renderPlot({spc()$RV4A$PLOT})
+  output$RV4C <- renderPlot({spc()$RV4C$PLOT})
+  output$RV4G <- renderPlot({spc()$RV4G$PLOT})
+  
+  output$traffic <- renderTable({
+    sumtab <- tibble(
+      "Property" = c("Density", "Swell Ratio", "Ash", "Cut", "Granules/g"),
+      "RV2" = c(G, G, NA, Y, G),
+      "RV3" = c(G, Y, R, R, Y),
+      "RV4" = c(R, G, G, Y, G)
+    )
+    sumtab
+  }, na = "", align = "lccc", spacing = "m", width = "100%",
+  sanitize.text.function = function(x) x)
+  
+  
+  FLOSS <- function(ndays){
+    
+    st <- today() - ndays
+    
+    floss.plot <- DATA$FLOS %>% filter(DATE >= st) %>% 
+      ggplot(aes(DATE,value, fill=category)) + 
+      theme_bw() +
+      geom_area() + 
+      theme(panel.grid.major = element_blank(), 
+            panel.grid.minor = element_blank(),
+            legend.position = "top",
+            axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, 
+                                       face = "bold", size = 11),
+            axis.text.y = element_text(face = "bold", size = 11)) + 
+      scale_y_continuous(labels = scales::percent, expand = c(0,0)) + 
+      scale_fill_manual(values = c("red","orange","yellow","green")) +
+      geom_line(position = "stack", colour = "dimgrey") +
+      labs(x=NULL, y=NULL, fill=NULL) + 
+      facet_wrap(vars(EQ_NAME)) +
+      scale_x_datetime(date_labels = "%d-%b")
+    
+    return(floss.plot)
+    
+  }
+  
+  output$floss <- renderPlot(FLOSS(input$days))
+  
+}
+
+# Run the app ----
+shinyApp(ui = ui, server = server)
