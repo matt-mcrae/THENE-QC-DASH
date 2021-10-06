@@ -117,3 +117,28 @@ ggplot(lng, aes(Date,value, fill=name)) + geom_area() +
 #   scale_fill_manual(values = c("red","orange","yellow","green")) +
 #   scale_x_datetime(expand=c(0,0)) + geom_line(position = "stack") +
 #   labs(x=NULL, y=NULL, fill=NULL) + theme(legend.position = "bottom")
+
+FLOSS <- function(ndays = 7){
+  
+  st <- today() - ndays
+  
+  floss.plot <- DATA$FLOS %>% filter(DATE >= st) %>% 
+    ggplot(aes(DATE,value, fill=category)) + 
+    theme_bw() +
+    geom_area() + 
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          legend.position = "top",
+          axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, 
+                                     face = "bold", size = 11),
+          axis.text.y = element_text(face = "bold", size = 11)) + 
+    scale_y_continuous(labels = scales::percent, expand = c(0,0)) + 
+    scale_fill_manual(values = c("red","orange","yellow","green")) +
+    geom_line(position = "stack", colour = "dimgrey") +
+    labs(x=NULL, y=NULL, fill=NULL) + 
+    facet_wrap(vars(EQ_NAME)) +
+    scale_x_datetime(date_labels = "%d-%b")
+  
+  return(floss.plot)
+  
+}

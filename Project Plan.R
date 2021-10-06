@@ -5,8 +5,9 @@
 #    [y] Data on amount of floss in containers loaded out
 #    [y] Create a summary/home page with 'traffic lights'
 #    [y] Update 'floss' code to use bulk silos instead of BLPs
-#    [] Optimise performance (Seperate out DB queries and just do filters reactively)
+#    [y] Seperate out DB queries and just do filters reactively
 #    [] Add 'conditions' for dynamically updating traffic lights
+#    [] Optimise performance by using reactive programming correctly
 #    [] Finalise the header texts
 
 # Updated punchlist 24/09/21 ----
