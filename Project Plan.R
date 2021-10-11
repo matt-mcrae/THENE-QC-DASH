@@ -6,9 +6,12 @@
 #    [y] Create a summary/home page with 'traffic lights'
 #    [y] Update 'floss' code to use bulk silos instead of BLPs
 #    [y] Seperate out DB queries and just do filters reactively
-#    [] Add 'conditions' for dynamically updating traffic lights
-#    [] Optimise performance by using reactive programming correctly
-#    [] Finalise the header texts
+#    [y] Finalise Look and Layout of Floss charts
+#    [y] Add 'conditions' for dynamically updating traffic lights
+#    [y] Common date breaks for floss and other charts (just added it into 'FLOSS' function)
+#    [y] Add handling for when no Ash results present
+#    [y] Finalise the header texts
+#    [] Optimise performance by using reactive programming correctly?
 
 # Updated punchlist 24/09/21 ----
 
