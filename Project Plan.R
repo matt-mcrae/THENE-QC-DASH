@@ -11,7 +11,7 @@
 #    [y] Common date breaks for floss and other charts (just added it into 'FLOSS' function)
 #    [y] Add handling for when no Ash results present
 #    [y] Finalise the header texts
-#    [] Optimise performance by using reactive programming correctly?
+#    [y] Optimise performance by using reactive programming correctly?
 
 # Updated punchlist 24/09/21 ----
 

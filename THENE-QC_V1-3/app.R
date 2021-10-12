@@ -21,7 +21,8 @@ ui <-
         3,
         sliderInput(
           "days",
-          label = "Number of Days to View:",
+          label = div("Number of Days to View:",
+                      style = "font-size:19px"),
           min = 7,
           max = 28,
           value = 7
@@ -97,54 +98,36 @@ ui <-
     tabPanel(
       title = strong("RV2", style = "color:springgreen; font-size:24px"),
       fluidRow(column(6, plotOutput('RV2D')), column(6, plotOutput('RV2S'))),
-      if(is.null(spc$RV2A$PLOT)){
-        fluidRow(
-          column(6, plotOutput('RV2C')), 
-          column(6, plotOutput('RV2G'))
-        )} else{
-          fluidRow(
-            column(4, plotOutput('RV2A')),
-            column(4, plotOutput('RV2C')),
-            column(4, plotOutput('RV2G'))
-          )
-        }
+      fluidRow(
+        column(4, plotOutput('RV2A')),
+        column(4, plotOutput('RV2C')),
+        column(4, plotOutput('RV2G'))
+      )
     ),
     tabPanel(
       title = strong("RV3", style = "color:lightskyblue; font-size:24px"),
       fluidRow(column(6, plotOutput('RV3D')), column(6, plotOutput('RV3S'))),
-      if(is.null(spc$RV3A$PLOT)){
-        fluidRow(
-          column(6, plotOutput('RV3C')), 
-          column(6, plotOutput('RV3G'))
-        )} else{
-          fluidRow(
-            column(4, plotOutput('RV3A')),
-            column(4, plotOutput('RV3C')),
-            column(4, plotOutput('RV3G'))
-          )
-        }
+      fluidRow(
+        column(4, plotOutput('RV3A')),
+        column(4, plotOutput('RV3C')),
+        column(4, plotOutput('RV3G'))
+      )
     ),
     tabPanel(
       title = strong("RV4", style = "color:hotpink; font-size:24px"),
       fluidRow(column(6, plotOutput('RV4D')), column(6, plotOutput('RV4S'))),
-      if(is.null(spc$RV4A$PLOT)){
-        fluidRow(
-          column(6, plotOutput('RV4C')), 
-          column(6, plotOutput('RV4G'))
-        )} else{
-          fluidRow(
-            column(4, plotOutput('RV4A')),
-            column(4, plotOutput('RV4C')),
-            column(4, plotOutput('RV4G'))
-          )
-        }
+      fluidRow(
+        column(4, plotOutput('RV4A')),
+        column(4, plotOutput('RV4C')),
+        column(4, plotOutput('RV4G'))
     )
+  )
   )
 
 # Define server logic ----
 server <- function(input, output) {
   
-  LIMS()
+  DATA <- LIMS()
   
   spc <- reactive({SPC(input$days)})
   
@@ -170,8 +153,8 @@ server <- function(input, output) {
                                 na = "",
                                 rownames = T,
                                 align = "lccc", 
-                                spacing = "m", 
-                                width = "100%", 
+                                spacing = "m",
+                                wideth = "100%",
                                 sanitize.text.function = function(x) x)
   
   
@@ -191,23 +174,23 @@ server <- function(input, output) {
             datev <- 0.5}
     
     floss.plot <- DATA$FLOS %>% filter(DATE >= st) %>% 
-      ggplot(aes(DATE,value, fill=category)) + 
+      ggplot(aes(DATE,value,fill=category)) + 
       theme_bw() +
-      geom_area() + 
+      geom_area() +
+      geom_line(position = "stack", colour = "dimgrey") +      
+      scale_x_datetime(date_breaks = "1 day", date_labels = datel) + 
+      scale_y_continuous(labels = scales::percent, expand = c(0,0)) +  
+      scale_fill_manual(values = c("red","orange","yellow","green")) +      
       theme(legend.position = "top",
             legend.text = element_text(face = "bold", size = 12),
             axis.text.x = element_text(angle = datea, vjust = datev, hjust=1, 
                                        face = "bold", size = 12),
             axis.text.y = element_text(face = "bold", size = 12),
             strip.text.x = element_text(size = 14, face = "bold")) + 
-      scale_y_continuous(labels = scales::percent, expand = c(0,0)) + 
-      scale_fill_manual(values = c("red","orange","yellow","green")) +
-      geom_line(position = "stack", colour = "dimgrey") +
       labs(x=NULL, y=NULL, fill=NULL) + 
-      facet_wrap(~EQ_NAME) +
-      scale_x_datetime(date_breaks = "1 day", date_labels = datel)
+      facet_wrap(~EQ_NAME)
     
-    return(floss.plot)
+    return(suppressMessages(print(floss.plot)))
     
   }
   
