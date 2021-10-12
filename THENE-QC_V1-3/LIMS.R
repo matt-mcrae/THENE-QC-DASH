@@ -1,5 +1,5 @@
 LIMS <- function(){
-
+options(dplyr.summarise.inform=F)
 #    QUERIES ----
 
 #Create date string for the DB query (otherwise it plays up)
@@ -119,17 +119,20 @@ suppressWarnings(
 
 
 #TRAFFIC LIGHTS----
-#Create a dataframe for display on the web app (all lights set to 'GREEN' 
-#initially and update values if any points are identified as R or Y in TRAF.SUM))
-TRAF <- data.frame("RV2"=rep("G",5),"RV3"=rep("G",5),"RV4"=rep("G",5), 
-                   row.names=c("Density","Swell Ratio","Ash",
-                               "Good Granules", "Granules per Gram"))
-
 #Collect results (and specs for these) over previous 24hrs:
 TRAF.SUM <- inner_join(QRY.RSLT, SPEC, by=c("PRDCT_NAME", "PRPRTY_NAME")) %>% 
   filter(SMPL_DT_TM >= (today() - 1) & !is.na(RSLT_NUMERIC_VALUE)) %>%
 #Initialise a column for storing the result of the spec. check:
   mutate("COLOUR" = "G")
+
+#IF there are any data over the past 24hrs,
+#Create a dataframe for display on the web app (all lights set to 'GREEN' initially 
+#and update values if any points are identified as R or Y in TRAF.SUM));
+#otherwise, just return a blank dataframe
+if(nrow(TRAF.SUM)>0){
+TRAF <- data.frame("RV2"=rep("G",5),"RV3"=rep("G",5),"RV4"=rep("G",5), 
+                   row.names=c("Density","Swell Ratio","Ash",
+                               "Good Granules", "Granules per Gram"))
 
 #Check each row for violations of the spec. limits:
 for(i in 1:nrow(TRAF.SUM)){
@@ -163,6 +166,11 @@ if("RV2" %in% colnames(TRAF.SUM)){TRAF$RV2 <- TRAF.SUM$RV2[match(rownames(TRAF),
 if("RV3" %in% colnames(TRAF.SUM)){TRAF$RV3 <- TRAF.SUM$RV3[match(rownames(TRAF),TRAF.SUM$PRPRTY_NAME)]}else{TRAF$RV3 <- NA}
 if("RV4" %in% colnames(TRAF.SUM)){TRAF$RV4 <- TRAF.SUM$RV4[match(rownames(TRAF),TRAF.SUM$PRPRTY_NAME)]}else{TRAF$RV4 <- NA}
 
+} else {
+  TRAF <- data.frame("RV2"=rep("No Data",5),"RV3"=rep("No Data",5),"RV4"=rep("No Data",5), 
+                             row.names=c("Density","Swell Ratio","Ash",
+                                         "Good Granules", "Granules per Gram"))
+}
 
 #SPEC OVERRIDES----
 #Issues with single-sided spec. limits, manually override:
@@ -189,6 +197,8 @@ SPEC$UCL[SPEC$PRPRTY_NAME == "Swell Ratio" &
 #    OUTPUT DATA AS NAMED LIST----
 DATA <- list("RSLT" = QRY.RSLT, "SPEC" = SPEC, "FLOS" = FLOS, "TRAF" = TRAF)
 
-assign("DATA", DATA, envir = .GlobalEnv) #NOTE this will not work with >1 user
+options(dplyr.summarise.inform=T)
+
+return(DATA)
 
 }
