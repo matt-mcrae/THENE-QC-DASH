@@ -15,10 +15,13 @@ source("FLOSS.R")
 # Define UI ----
 ui <-
   navbarPage(
+    #Page Title
     title = div(strong("Alkathene Quality Dashboard"),
                 style = "color:darkblue; font-size:40px"),
     windowTitle = "Alkathene QC Dashboard",
     collapsible = T,
+    
+    #Header Bar
     header = wellPanel(
       fluidRow(
         column(4, div(style = "font-size:14px; height:80px; color:dimgrey",
@@ -51,6 +54,8 @@ ui <-
         ".checkbox {margin-top: 0px; margin-bottom: 0px;}"
       )
     ),
+    
+    #Overview Tab
     tabPanel(
       title = strong("Overview", style = "font-size:24px; color:dimgrey"),
       style = "margin-top: 10px",
@@ -73,24 +78,32 @@ ui <-
         offset = 1)
       )
     ),
+    
+    #RV2 Tab
     tabPanel(
       title = strong("RV2", style = "color:springgreen; font-size:24px"),
       fluidRow(column(6, plotlyOutput('RV2D')), 
                column(6, plotlyOutput('RV2S'))),
       uiOutput("RV2")
     ),
+    
+    #RV3 Tab
     tabPanel(
       title = strong("RV3", style = "color:lightskyblue; font-size:24px"),
       fluidRow(column(6, plotlyOutput('RV3D')), 
                column(6, plotlyOutput('RV3S'))),
       uiOutput("RV3")
     ),
+   
+    #RV4 Tab
     tabPanel(
       title = strong("RV4", style = "color:hotpink; font-size:24px"),
       fluidRow(column(6, plotlyOutput('RV4D')), 
                column(6, plotlyOutput('RV4S'))),
       uiOutput("RV4")
     ),
+    
+    #Help Tab
     tabPanel(
       title = strong("Help", style = "font-size:24px; color:dimgrey"),
       style = "margin-top: 10px",
@@ -150,19 +163,22 @@ ui <-
 # Define server logic ----
 server <- function(input, output) {
   
-  DATA <-  reactiveVal(LIMS())
+  #Do the LIMS query ONCE per user session (pulls past 28 days)
+  DATA <- LIMS()
   
+  #Disable warning messages
   options(warn = -1)
 
+  #RV2
+  output$RV2D <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV2", "Density", input$days, input$spc)})
+  output$RV2S <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV2", "Swell Ratio", input$days, input$spc)})
+  output$RV2A <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV2", "Ash", input$days, input$spc)})
+  output$RV2G <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV2", "Granules per Gram", input$days, input$spc)})
+  output$RV2C <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV2", "Good Granules", input$days, input$spc)})
   
-  output$RV2D <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV2", "Density", input$days, input$spc)})
-  output$RV2S <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV2", "Swell Ratio", input$days, input$spc)})
-  output$RV2A <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV2", "Ash", input$days, input$spc)})
-  output$RV2G <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV2", "Granules per Gram", input$days, input$spc)})
-  output$RV2C <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV2", "Good Granules", input$days, input$spc)})
-  
+  #Don't draw the Ash plot on the bottom row if no Ash results
   output$RV2 <- renderUI({
-    if(is.null(SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV2", "Ash", input$days, input$spc))){fluidRow(
+    if(is.null(SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV2", "Ash", input$days, input$spc))){fluidRow(
         column(6, plotlyOutput("RV2C")),
         column(6, plotlyOutput("RV2G"))
       )
@@ -174,14 +190,16 @@ server <- function(input, output) {
     }
   })
   
-  output$RV3D <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV3", "Density", input$days, input$spc)})
-  output$RV3S <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV3", "Swell Ratio", input$days, input$spc)})
-  output$RV3A <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV3", "Ash", input$days, input$spc)})
-  output$RV3G <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV3", "Granules per Gram", input$days, input$spc)})
-  output$RV3C <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV3", "Good Granules", input$days, input$spc)})
+  #RV3
+  output$RV3D <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV3", "Density", input$days, input$spc)})
+  output$RV3S <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV3", "Swell Ratio", input$days, input$spc)})
+  output$RV3A <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV3", "Ash", input$days, input$spc)})
+  output$RV3G <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV3", "Granules per Gram", input$days, input$spc)})
+  output$RV3C <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV3", "Good Granules", input$days, input$spc)})
   
+  #Don't draw the Ash plot on the bottom row if no Ash results
   output$RV3 <- renderUI({
-    if(is.null(SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV3", "Ash", input$days, input$spc))){fluidRow(
+    if(is.null(SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV3", "Ash", input$days, input$spc))){fluidRow(
       column(6, plotlyOutput("RV3C")),
       column(6, plotlyOutput("RV3G"))
     )
@@ -193,14 +211,16 @@ server <- function(input, output) {
     }
   })
   
-  output$RV4D <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV4", "Density", input$days, input$spc)})
-  output$RV4S <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV4", "Swell Ratio", input$days, input$spc)})
-  output$RV4A <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV4", "Ash", input$days, input$spc)})
-  output$RV4G <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV4", "Granules per Gram", input$days, input$spc)})
-  output$RV4C <- renderPlotly({SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV4", "Good Granules", input$days, input$spc)})
+  #RV4
+  output$RV4D <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV4", "Density", input$days, input$spc)})
+  output$RV4S <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV4", "Swell Ratio", input$days, input$spc)})
+  output$RV4A <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV4", "Ash", input$days, input$spc)})
+  output$RV4G <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV4", "Granules per Gram", input$days, input$spc)})
+  output$RV4C <- renderPlotly({SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV4", "Good Granules", input$days, input$spc)})
   
+  #Don't draw the Ash plot on the bottom row if no Ash results
   output$RV4 <- renderUI({
-    if(is.null(SPC_PLOT(DATA()$RSLT, DATA()$SPEC, "RV4", "Ash", input$days, input$spc))){fluidRow(
+    if(is.null(SPC_PLOT(DATA$RSLT, DATA$SPEC, "RV4", "Ash", input$days, input$spc))){fluidRow(
       column(6, plotlyOutput("RV4C")),
       column(6, plotlyOutput("RV4G"))
     )
@@ -212,8 +232,8 @@ server <- function(input, output) {
     }
   })
   
-  
-  output$traffic <- renderTable({DATA()$TRAF},
+  #Traffic Lights
+  output$traffic <- renderTable({DATA$TRAF},
                                 na = "",
                                 rownames = T,
                                 align = "lccc",
@@ -222,12 +242,13 @@ server <- function(input, output) {
                                 sanitize.text.function = function(x) x)
 
 
-  output$floss <- renderPlot(FLOSS(DATA()$FLOS, input$days))
+  #Floss Information
+  output$floss <- renderPlot(FLOSS(DATA$FLOS, input$days))
   
-  
-  output$last <- renderText(strftime(last(DATA()$RSLT$SMPL_DT_TM), 
+  #Info about last result (displayed in header)
+  output$last <- renderText(strftime(last(DATA$RSLT$SMPL_DT_TM), 
                                      "%a %b %e, %R", 
-                                     tz = "GMT"))
+                                     tz = "UTC"))
   
 }
 
