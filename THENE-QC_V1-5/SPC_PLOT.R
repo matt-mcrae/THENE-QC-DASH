@@ -147,50 +147,64 @@ SPC_PLOT <- function(dat, spec, rv, prpty, ndays, SPC){
   
   # ASSIGN GGPLOT2 OBJECTS (FOR PLOTTING LATER) ----
   
-    PLOT <-   
-      ggplot(data = SMRY) + theme_bw() +
-      #Remove the gridlines
-      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
-      #draw a yellow rectangle to indicate the zone outside of QC but within QA
-      geom_rect(aes(xmin=ts, xmax=tf, ymin=LSL, ymax=USL), fill="lightgoldenrod") +
-      #draw a green rectangle to indicate the zone within QC
-      geom_rect(aes(xmin=ts, xmax=tf, ymin=LCL, ymax=UCL), fill="lightgreen") +
-      #draw line for the target value
-      geom_segment(aes(x=ts,y=AIM,xend=tf,yend=AIM), colour = 'dodgerblue', size = 0.75) +
-      #draw a faint box around the data points (since geom_label doesn't work with ggplotly):
-      geom_rect(aes(xmin=ts, xmax=tf, ymin=m3s, ymax=p3s), fill="ivory", alpha = 0.2) +
-      #Plot the data points as a line chart (by group)
-      geom_line(data=RSLT, mapping=aes(SMPL_DT_TM, RSLT_NUMERIC_VALUE, group = GROUP), 
-                na.rm=T, colour = "dimgrey") +
-      #Plot individual data as black points
-      geom_point(data=RSLT, mapping=aes(SMPL_DT_TM, RSLT_NUMERIC_VALUE, 
-                                        text = RSLT_NUMERIC_VALUE), na.rm=T, size = 1.5) +
-      #Add labels above each group area
-      geom_text(aes(x=ts+0.5*(tf-ts), y=p3s, label=paste0("<b>",GRADE)), 
-                nudge_y=mean(SMRY$SD*0.5, na.rm=T)) +
-      #Adjust the x-axis to have breaks at 5AM/PM intervals over one week
-      scale_x_datetime(breaks = dateb, date_labels = paste0("<b>",datel), expand=c(0,0)) +
-      #Rotate the x-axis labels by 45 degrees
-      theme(axis.text.x = element_text(angle = datea, hjust=1, vjust = datev)) +
-      #Remove the x-axis label and show the property and units on the y-axis
-      labs(x=NULL, y=paste0(RSLT$PRPRTY_NAME[1]," (",RSLT$UNITS[1],")")) +
-      #Make the typeface of the y-axis bold and larger than default
-      theme(axis.title.y = element_text(face = "bold", size = 14)) +
-      #Make the background colour red
-      theme(panel.background = element_rect(fill = "lightcoral")) 
-    
-    if(SPC){PLOT <- PLOT +
-      #Conditionally draw sigma limits and SPC rule violations if SPC layer enabled:
-      geom_segment(aes(x=ts,y=p3s,xend=tf,yend=p3s), colour = 'red', linetype = 2, size = 0.4) +
-      geom_segment(aes(x=ts,y=p2s,xend=tf,yend=p2s), colour = 'red', linetype = 3, size = 0.2) +
-      geom_segment(aes(x=ts,y=p1s,xend=tf,yend=p1s), colour = 'red', linetype = 3, size = 0.1) +
-      geom_segment(aes(x=ts,y=MU,xend=tf,yend=MU), colour = 'forestgreen', size = 0.6) +
-      geom_segment(aes(x=ts,y=m1s,xend=tf,yend=m1s), colour = 'red', linetype = 3, size = 0.1) +
-      geom_segment(aes(x=ts,y=m2s,xend=tf,yend=m2s), colour = 'red', linetype = 3, size = 0.2) +
-      geom_segment(aes(x=ts,y=m3s,xend=tf,yend=m3s), colour = 'red', linetype = 2, size = 0.4) +
+  PLOT <-   
+    ggplot(data = SMRY) + theme_bw() +
+    #Remove the gridlines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) +
+    #draw a yellow rectangle to indicate the zone outside of QC but within QA
+    geom_rect(aes(xmin=ts, xmax=tf, ymin=LSL, ymax=USL), fill="lightgoldenrod") +
+    #draw a green rectangle to indicate the zone within QC
+    geom_rect(aes(xmin=ts, xmax=tf, ymin=LCL, ymax=UCL), fill="lightgreen") +
+    #draw line for the target value
+    geom_segment(aes(x=ts,y=AIM,xend=tf,yend=AIM), colour = 'dodgerblue', size = 0.75) +
+    #draw a faint box around the data points (since geom_label doesn't work with ggplotly):
+    geom_rect(aes(xmin=ts, xmax=tf, ymin=m3s, ymax=p3s), fill="ivory", alpha = 0.2) +
+    #Plot the data points as a line chart (by group)
+    geom_line(data=RSLT, mapping=aes(SMPL_DT_TM, RSLT_NUMERIC_VALUE, group = GROUP), 
+              na.rm=T, colour = "dimgrey") +
+    #Plot individual data as black points
+    geom_point(data=RSLT, mapping=aes(SMPL_DT_TM, RSLT_NUMERIC_VALUE, 
+                                      text = paste0("<b>",RSLT_NUMERIC_VALUE,"</b>",
+                                                    " ",
+                                                    "<em>", UNITS, "</em>",
+                                                    "<br>",
+                                                    SMPL_DT_TM 
+                                      )), na.rm=T, size = 1.5) +
+    #Add labels above each group area
+    geom_text(aes(x=ts+0.5*(tf-ts), y=p3s, label=paste0("<b>",GRADE)), 
+              nudge_y=mean(SMRY$SD*0.5, na.rm=T)) +
+    #Adjust the x-axis to have breaks at 5AM/PM intervals over one week
+    scale_x_datetime(breaks = dateb, date_labels = paste0("<b>",datel), expand=c(0,0)) +
+    #Rotate the x-axis labels by 45 degrees
+    theme(axis.text.x = element_text(angle = datea, hjust=1, vjust = datev)) +
+    #Remove the x-axis label and show the property and units on the y-axis
+    labs(x=NULL, y=paste0(RSLT$PRPRTY_NAME[1]," (",RSLT$UNITS[1],")")) +
+    #Make the typeface of the y-axis bold and larger than default
+    theme(axis.title.y = element_text(face = "bold", size = 14)) +
+    #Make the background colour red
+    theme(panel.background = element_rect(fill = "lightcoral")) 
+  
+  if(SPC){PLOT <- PLOT +
+    #Conditionally draw sigma limits and SPC rule violations if SPC layer enabled:
+    geom_segment(aes(x=ts,y=p3s,xend=tf,yend=p3s), colour = 'red', linetype = 2, size = 0.4) +
+    geom_segment(aes(x=ts,y=p2s,xend=tf,yend=p2s), colour = 'red', linetype = 3, size = 0.2) +
+    geom_segment(aes(x=ts,y=p1s,xend=tf,yend=p1s), colour = 'red', linetype = 3, size = 0.1) +
+    geom_segment(aes(x=ts,y=MU,xend=tf,yend=MU), colour = 'forestgreen', size = 0.6) +
+    geom_segment(aes(x=ts,y=m1s,xend=tf,yend=m1s), colour = 'red', linetype = 3, size = 0.1) +
+    geom_segment(aes(x=ts,y=m2s,xend=tf,yend=m2s), colour = 'red', linetype = 3, size = 0.2) +
+    geom_segment(aes(x=ts,y=m3s,xend=tf,yend=m3s), colour = 'red', linetype = 2, size = 0.4)
+  
+  #Only draw 'out of control' points if there are actually any rule violations:
+  if(sum(RSLT$RULE==0) < nrow(RSLT)){
+    PLOT <- PLOT +
       #Plot 'out of control' data as red points...
       geom_point(data=RSLT[RSLT$RULE!=0,],
-                 mapping=aes(SMPL_DT_TM, RSLT_NUMERIC_VALUE, text = RSLT_NUMERIC_VALUE), 
+                 mapping=aes(SMPL_DT_TM, RSLT_NUMERIC_VALUE, 
+                             text = paste0("<b>",RSLT_NUMERIC_VALUE,"</b>",
+                                           " ",
+                                           "<em>", UNITS, "</em>",
+                                           "<br>",
+                                           SMPL_DT_TM)), 
                  colour='red', na.rm=T, size = 1.5) +
       #...with red text labels showing rule no. that was violated
       geom_text(data=RSLT[RSLT$RULE!=0,], 
@@ -199,7 +213,8 @@ SPC_PLOT <- function(dat, spec, rv, prpty, ndays, SPC){
                 nudge_y=sign(RSLT$RULE[RSLT$RULE!=0])*
                   mean(SMRY$SD, na.rm=T)*0.5, 
                 colour = 'red3')
-    }
+  }
+  }
     
 
   PLOT <- ggplotly(PLOT, tooltip = "text") %>%

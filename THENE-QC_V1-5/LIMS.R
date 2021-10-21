@@ -122,7 +122,8 @@ SPEC <- SPEC %>% mutate("AIM" = (UCL + LCL)/2)
 #TRAFFIC LIGHTS----
 #Collect results (and specs for these) over previous 24hrs:
 TRAF.SUM <- inner_join(QRY.RSLT, SPEC, by=c("PRDCT_NAME", "PRPRTY_NAME")) %>% 
-  filter(SMPL_DT_TM >= (today() - 1) & !is.na(RSLT_NUMERIC_VALUE)) %>%
+  filter(SMPL_DT_TM >= (force_tz(now()-24*60*60, tzone = "UTC")) & 
+           !is.na(RSLT_NUMERIC_VALUE)) %>%
 #Initialise a column for storing the result of the spec. check:
   mutate("COLOUR" = "G")
 
